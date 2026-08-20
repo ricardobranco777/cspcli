@@ -1,0 +1,49 @@
+#!/bin/bash
+# SPDX-License-Identifier: BSD-2-Clause
+
+. /etc/sysconfig/aws 2>/dev/null || true
+
+IMAGE="${IMAGE:-docker.io/amazon/aws-cli:latest}"
+
+DOCKER=$(command -v docker)
+PODMAN=$(command -v podman)
+
+RUNTIME="${RUNTIME:-${PODMAN:-$DOCKER}}"
+
+RUNTIME_OPTS=(
+	--cap-drop=ALL
+	--read-only
+	--rm
+	--security-opt=no-new-privileges
+	--user "$(id -u):$(id -g)"
+	-e AWS_CONFIG_FILE=/.aws/config
+	-e AWS_SHARED_CREDENTIALS_FILE=/.aws/credentials
+	-e AWS_PROFILE
+	-v "${HOME}/.aws:/.aws:z"
+	-v "$PWD:/work:z"
+	-w /work
+)
+
+# We need unprivileged user namespaces for rootless containers
+if unshare -U true >/dev/null 2>&1; then
+	SUDO=
+else
+	SUDO=${SUDO:-$(command -v sudo)}
+fi
+
+# Do not use sudo if we're in docker group
+if [[ $RUNTIME =~ docker ]]; then
+	if [[ " $(id -Gn) " == *" docker "* ]] || [ "$USER" = "root" ]; then
+		SUDO=
+	fi
+fi
+
+if [ -n "$SUDO" ]; then
+	SUDO="$SUDO --preserve-env=AWS_CONFIG_FILE,AWS_SHARED_CREDENTIALS_FILE,AWS_PROFILE"
+fi
+
+if [ ! -d "$HOME/.aws" ]; then
+	mkdir -m 700 "$HOME/.aws"
+fi
+
+exec $SUDO "$RUNTIME" run "${RUNTIME_OPTS[@]}" "$IMAGE" "$@"

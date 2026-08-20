@@ -1,0 +1,47 @@
+#!/bin/bash
+# SPDX-License-Identifier: BSD-2-Clause
+
+. /etc/sysconfig/az 2>/dev/null || true
+
+IMAGE="${IMAGE:-mcr.microsoft.com/azure-cli:latest}"
+
+DOCKER=$(command -v docker)
+PODMAN=$(command -v podman)
+
+RUNTIME="${RUNTIME:-${PODMAN:-$DOCKER}}"
+
+RUNTIME_OPTS=(
+	--cap-drop=ALL
+	--read-only
+	--rm
+	--security-opt=no-new-privileges
+	--user "$(id -u):$(id -g)"
+	-e AZURE_CONFIG_DIR=/.azure
+	-v "$HOME/.azure:/.azure:z"
+	-v "$PWD:/work:z"
+	-w /work
+)
+
+# We need unprivileged user namespaces for rootless containers
+if unshare -U true >/dev/null 2>&1; then
+	SUDO=
+else
+	SUDO=${SUDO:-$(command -v sudo)}
+fi
+
+# Do not use sudo if we're in docker group
+if [[ $RUNTIME =~ docker ]]; then
+	if [[ " $(id -Gn) " == *" docker "* ]] || [ "$USER" = "root" ]; then
+		SUDO=
+	fi
+fi
+
+if [ -n "$SUDO" ]; then
+	SUDO="$SUDO --preserve-env=AZURE_CONFIG_DIR"
+fi
+
+if [ ! -d "$HOME/.azure" ]; then
+	mkdir -m 700 "$HOME/.azure"
+fi
+
+exec $SUDO "$RUNTIME" run "${RUNTIME_OPTS[@]}" "$IMAGE" az "$@"
