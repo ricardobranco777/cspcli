@@ -1,0 +1,59 @@
+#!/bin/bash
+# SPDX-License-Identifier: BSD-2-Clause
+#
+# Symlink gsutil to this script to invoke it from the same image.
+
+CMD=$(basename "$0")
+
+case "$CMD" in
+gcloud | gsutil) ;;
+*)
+	echo "$0: unsupported command '$CMD'" >&2
+	exit 1
+	;;
+esac
+
+. "/etc/sysconfig/$CMD" 2>/dev/null || true
+
+IMAGE="${IMAGE:-gcr.io/google.com/cloudsdktool/cloud-sdk:latest}"
+
+DOCKER=$(command -v docker)
+PODMAN=$(command -v podman)
+
+RUNTIME="${RUNTIME:-${PODMAN:-$DOCKER}}"
+
+RUNTIME_OPTS=(
+	--cap-drop=ALL
+	--read-only
+	--rm
+	--security-opt=no-new-privileges
+	--user "$(id -u):$(id -g)"
+	-e CLOUDSDK_CONFIG=/.config/gcloud
+	-v "$HOME/.config/gcloud:/.config/gcloud:z"
+	-v "$PWD:/work:z"
+	-w /work
+)
+
+# We need unprivileged user namespaces for rootless containers
+if unshare -U true >/dev/null 2>&1; then
+	SUDO=
+else
+	SUDO=${SUDO:-$(command -v sudo)}
+fi
+
+# Do not use sudo if we're in docker group
+if [[ $RUNTIME =~ docker ]]; then
+	if [[ " $(id -Gn) " == *" docker "* ]] || [ "$USER" = "root" ]; then
+		SUDO=
+	fi
+fi
+
+if [ -n "$SUDO" ]; then
+	SUDO="$SUDO --preserve-env=CLOUDSDK_CONFIG"
+fi
+
+if [ ! -d "$HOME/.config/gcloud" ]; then
+	mkdir -m 700 -p "$HOME/.config/gcloud"
+fi
+
+exec $SUDO "$RUNTIME" run "${RUNTIME_OPTS[@]}" "$IMAGE" "$CMD" "$@"
