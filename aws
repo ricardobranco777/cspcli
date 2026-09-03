@@ -7,6 +7,7 @@ IMAGE="${IMAGE:-docker.io/amazon/aws-cli:latest}"
 
 DOCKER=$(command -v docker)
 PODMAN=$(command -v podman)
+SUDO=$(command -v sudo)
 
 RUNTIME="${RUNTIME:-${PODMAN:-$DOCKER}}"
 
@@ -27,8 +28,6 @@ RUNTIME_OPTS=(
 # We need unprivileged user namespaces for rootless containers
 if unshare -U true >/dev/null 2>&1; then
 	SUDO=
-else
-	SUDO=${SUDO:-$(command -v sudo)}
 fi
 
 # Do not use sudo if we're in docker group

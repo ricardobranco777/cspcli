@@ -168,7 +168,6 @@ script's `RUNTIME_OPTS`.
 |-----------|-----------------------------------------------------------|
 | `IMAGE`   | Container image to run (defaults to the latest official image) |
 | `RUNTIME` | Container runtime to use (`docker` or `podman`)          |
-| `SUDO`    | Command used to gain privileges when rootless containers aren't available |
 
 Each script also sources its own site config before running, if present:
 `/etc/sysconfig/az` for `az`, `/etc/sysconfig/aws` for `aws`, and
