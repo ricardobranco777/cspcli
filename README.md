@@ -17,19 +17,24 @@ etc.) work as expected.
 
 ## Installation
 
-Copy `az`, `aws`, and `gcloud` somewhere on your `PATH` and make them
-executable:
-
 ```console
-$ install -m 755 az aws gcloud ~/.local/bin/
+$ make install
 ```
 
-`gsutil` (Cloud Storage) shares the same Cloud SDK image and config
-directory as `gcloud`. The `gcloud` script detects which name it was
-invoked as, so just symlink it:
+This installs `az`, `aws`, and `gcloud` to `$PREFIX/bin`, along with a
+`gsutil` symlink to `gcloud` (Cloud Storage shares the same Cloud SDK
+image and config directory, and the `gcloud` script detects which name
+it was invoked as). `PREFIX` defaults to `/usr/local` when run as root,
+or `~` (i.e. `~/bin`) otherwise. Override it explicitly as needed:
 
 ```console
-$ ln -s gcloud ~/.local/bin/gsutil
+$ make install PREFIX=/opt/cspcli
+```
+
+Uninstall with:
+
+```console
+$ make uninstall PREFIX=~/.local
 ```
 
 ## Usage
