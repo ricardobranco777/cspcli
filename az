@@ -16,10 +16,11 @@ RUNTIME_OPTS=(
 	--read-only
 	--rm
 	--security-opt=no-new-privileges
+	--security-opt=label=disable
 	--user "$(id -u):$(id -g)"
 	-e AZURE_CONFIG_DIR=/.azure
-	-v "$HOME/.azure:/.azure:z"
-	-v "$PWD:/work:z"
+	-v "$HOME/.azure:/.azure"
+	-v "$PWD:/work"
 	-w /work
 )
 

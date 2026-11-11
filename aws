@@ -16,12 +16,13 @@ RUNTIME_OPTS=(
 	--read-only
 	--rm
 	--security-opt=no-new-privileges
+	--security-opt=label=disable
 	--user "$(id -u):$(id -g)"
 	-e AWS_CONFIG_FILE=/.aws/config
 	-e AWS_SHARED_CREDENTIALS_FILE=/.aws/credentials
 	-e AWS_PROFILE
-	-v "${HOME}/.aws:/.aws:z"
-	-v "$PWD:/work:z"
+	-v "${HOME}/.aws:/.aws"
+	-v "$PWD:/work"
 	-w /work
 )
 

@@ -28,10 +28,11 @@ RUNTIME_OPTS=(
 	--read-only
 	--rm
 	--security-opt=no-new-privileges
+	--security-opt=label=disable
 	--user "$(id -u):$(id -g)"
 	-e CLOUDSDK_CONFIG=/.config/gcloud
-	-v "$HOME/.config/gcloud:/.config/gcloud:z"
-	-v "$PWD:/work:z"
+	-v "$HOME/.config/gcloud:/.config/gcloud"
+	-v "$PWD:/work"
 	-w /work
 )
 
